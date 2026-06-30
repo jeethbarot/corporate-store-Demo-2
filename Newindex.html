@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrandForge — Corporate Merchandise Solutions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    /* ─── TOKENS ──────────────────────────────────────────── */
+    :root {
+      --navy:        #0F2744;
+      --navy-mid:    #1B3E6F;
+      --navy-light:  #2A5BA8;
+      --accent:      #1E6FD9;
+      --accent-glow: #3B8AFF;
+      --steel:       #4A6FA5;
+      --sky:         #E8F1FB;
+      --white:       #FFFFFF;
+      --off-white:   #F8FAFD;
+      --border:      #E2EAF4;
+      --text-primary: #0D1F38;
+      --text-secondary: #4E6080;
+      --text-muted:  #8A9BB2;
+      --shadow-sm:   0 1px 4px rgba(15,39,68,.07), 0 1px 2px rgba(15,39,68,.04);
+      --shadow-md:   0 4px 16px rgba(15,39,68,.10), 0 2px 6px rgba(15,39,68,.06);
+      --shadow-lg:   0 12px 40px rgba(15,39,68,.14), 0 4px 12px rgba(15,39,68,.08);
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 18px;
+      --r-xl: 24px;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --transition: 0.22s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ─── RESET ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--white);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: var(--font-body); cursor: pointer; border: none; background: none; }
+    ul { list-style: none; }
+
+    /* ─── PAGES ───────────────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ─── NAVBAR ──────────────────────────────────────────── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 68px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-display);
+      font-size: 22px; font-weight: 800;
+      color: var(--navy); letter-spacing: -.5px;
+    }
+    .nav-logo-mark {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--navy-light), var(--accent-glow));
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 14px; font-weight: 800;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .nav-links a {
+      padding: 8px 14px; border-radius: var(--r-sm);
+      font-size: 14px; font-weight: 500; color: var(--text-secondary);
+      transition: color var(--transition), background var(--transition);
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--navy); background: var(--sky);
+    }
+    .nav-cart {
+      position: relative;
+      padding: 8px 16px; border-radius: var(--r-sm);
+      background: var(--navy); color: white;
+      font-size: 14px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+      transition: background var(--transition), transform var(--transition);
+    }
+    .nav-cart:hover { background: var(--navy-mid); transform: translateY(-1px); }
+    .cart-badge {
+      background: var(--accent-glow);
+      color: white; font-size: 10px; font-weight: 700;
+      border-radius: 50%; width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+      position: absolute; top: -4px; right: -4px;
+      opacity: 0; transform: scale(0);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .cart-badge.visible { opacity: 1; transform: scale(1); }
+    .hamburger { display: none; flex-direction: column; gap: 5px; padding: 8px; }
+    .hamburger span {
+      width: 22px; height: 2px; background: var(--navy);
+      border-radius: 2px; transition: transform var(--transition), opacity var(--transition);
+    }
+
+    /* ─── BUTTONS ─────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: var(--r-md);
+      background: var(--accent); color: white;
+      font-size: 15px; font-weight: 600;
+      box-shadow: 0 4px 14px rgba(30,111,217,.35);
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    }
+    .btn-primary:hover {
+      background: var(--navy-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(30,111,217,.45);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: var(--r-md);
+      border: 1.5px solid var(--border); background: white; color: var(--text-primary);
+      font-size: 14px; font-weight: 600;
+      transition: border-color var(--transition), background var(--transition), transform var(--transition);
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent); background: var(--sky);
+      transform: translateY(-1px);
+    }
+    .btn-navy {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: var(--r-md);
+      background: var(--navy); color: white;
+      font-size: 15px; font-weight: 600;
+      box-shadow: var(--shadow-md);
+      transition: background var(--transition), transform var(--transition);
+    }
+    .btn-navy:hover { background: var(--navy-mid); transform: translateY(-2px); }
+
+    /* ─── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(160deg, #0A1C35 0%, #0F2744 40%, #1B3E6F 100%);
+      padding: 100px 24px 110px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: 
+        radial-gradient(ellipse 700px 500px at 70% 50%, rgba(30,111,217,.18), transparent),
+        radial-gradient(ellipse 400px 300px at 15% 80%, rgba(59,138,255,.12), transparent);
+    }
+    .hero-grid {
+      position: absolute; inset: 0; opacity: .04;
+      background-image: linear-gradient(var(--accent-glow) 1px, transparent 1px),
+                        linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto;
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+      border-radius: 100px; padding: 6px 14px;
+      font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+      color: rgba(255,255,255,.75); margin-bottom: 22px;
+    }
+    .hero-eyebrow::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-glow);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+    .hero-headline {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 58px);
+      font-weight: 800; line-height: 1.08; letter-spacing: -.03em;
+      color: white; margin-bottom: 22px;
+    }
+    .hero-headline em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--accent-glow), #7EB8FF);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-body {
+      font-size: 17px; line-height: 1.65; color: rgba(255,255,255,.65);
+      margin-bottom: 36px; max-width: 480px;
+    }
+    .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .hero-trust {
+      margin-top: 48px; padding-top: 32px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+    }
+    .hero-trust-label {
+      font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+      color: rgba(255,255,255,.35);
+    }
+    .trust-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+    .trust-pill {
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 100px; padding: 5px 12px;
+      font-size: 12px; font-weight: 500; color: rgba(255,255,255,.55);
+    }
+    /* Hero visual */
+    .hero-visual {
+      display: flex; justify-content: center; align-items: center;
+    }
+    .hero-card-stack {
+      position: relative; width: 340px; height: 340px;
+    }
+    .hero-card {
+      position: absolute;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--r-xl);
+      backdrop-filter: blur(16px);
+      padding: 24px;
+      transition: transform .4s ease;
+    }
+    .hero-card:nth-child(1) {
+      width: 260px; top: 0; left: 40px;
+      transform: rotate(-6deg) translateY(0);
+      animation: float1 6s ease-in-out infinite;
+    }
+    .hero-card:nth-child(2) {
+      width: 240px; top: 80px; left: 80px;
+      transform: rotate(3deg);
+      animation: float2 7s ease-in-out infinite;
+    }
+    .hero-card:nth-child(3) {
+      width: 220px; top: 160px; left: 20px;
+      transform: rotate(-2deg);
+      animation: float3 8s ease-in-out infinite;
+    }
+    @keyframes float1 {
+      0%, 100% { transform: rotate(-6deg) translateY(0px); }
+      50% { transform: rotate(-6deg) translateY(-12px); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: rotate(3deg) translateY(-6px); }
+      50% { transform: rotate(3deg) translateY(6px); }
+    }
+    @keyframes float3 {
+      0%, 100% { transform: rotate(-2deg) translateY(4px); }
+      50% { transform: rotate(-2deg) translateY(-8px); }
+    }
+    .hcard-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 12px;
+    }
+    .hcard-title { font-size: 13px; font-weight: 600; color: white; margin-bottom: 4px; }
+    .hcard-sub { font-size: 12px; color: rgba(255,255,255,.45); }
+    .hcard-bar {
+      margin-top: 12px; height: 4px; border-radius: 4px;
+      background: rgba(255,255,255,.1);
+      overflow: hidden;
+    }
+    .hcard-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-glow));
+    }
+
+    /* ─── SOLUTIONS GRID ──────────────────────────────────── */
+    .solutions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .solution-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 28px 24px 24px;
+      box-shadow: var(--shadow-sm);
+      display: flex; flex-direction: column;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .solution-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(30,111,217,.2);
+    }
+    .solution-icon {
+      width: 52px; height: 52px; border-radius: var(--r-md);
+      background: var(--sky); display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 16px; flex-shrink: 0;
+      transition: background var(--transition);
+    }
+    .solution-card:hover .solution-icon { background: rgba(30,111,217,.12); }
+    .solution-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .solution-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.6; flex: 1; margin-bottom: 18px; }
+    .solution-cta {
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      padding: 0; background: none; border: none;
+      display: flex; align-items: center; gap: 4px;
+      transition: color var(--transition), gap var(--transition);
+      align-self: flex-start;
+    }
+    .solution-cta:hover { color: var(--navy-light); gap: 8px; }
+
+    /* ─── PRODUCT BADGES (enhanced) ──────────────────────── */
+    .product-badges {
+      position: absolute; top: 12px; left: 12px;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .pbadge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: .03em;
+      padding: 4px 9px; border-radius: 100px; width: fit-content;
+      line-height: 1;
+    }
+    .pbadge-bestseller { background: var(--accent); color: white; }
+    .pbadge-trending   { background: #EA580C; color: white; }
+    .pbadge-canada     { background: #DC2626; color: white; }
+    .pbadge-rush       { background: #16a34a; color: white; }
+    .pbadge-new        { background: var(--navy); color: white; }
+    .pbadge-popular    { background: #7C3AED; color: white; }
+    .pbadge-premium    { background: #B45309; color: white; }
+
+    /* ─── SEARCH BAR ──────────────────────────────────────── */
+    .products-search-bar {
+      max-width: 1200px; margin: 0 auto 36px; padding: 0 0px;
+    }
+    .search-wrap {
+      position: relative;
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: var(--r-lg);
+      box-shadow: 0 4px 20px rgba(30,111,217,.14), var(--shadow-sm);
+      display: flex; align-items: center;
+      overflow: hidden;
+      transition: box-shadow var(--transition);
+    }
+    .search-wrap:focus-within {
+      box-shadow: 0 4px 24px rgba(30,111,217,.24), 0 0 0 3px rgba(30,111,217,.12);
+    }
+    .search-icon {
+      padding: 0 16px 0 20px; font-size: 20px;
+      color: var(--accent); flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+    .search-input {
+      flex: 1; padding: 16px 8px; border: none; outline: none;
+      font-family: var(--font-body); font-size: 15px; color: var(--text-primary);
+      background: transparent;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-clear {
+      padding: 0 16px; font-size: 20px; color: var(--text-muted);
+      display: none; align-items: center; justify-content: center;
+      transition: color var(--transition);
+    }
+    .search-clear:hover { color: var(--navy); }
+    .search-clear.visible { display: flex; }
+    .search-btn {
+      padding: 12px 22px; margin: 6px;
+      background: var(--accent); color: white;
+      border-radius: var(--r-sm); font-size: 14px; font-weight: 600;
+      transition: background var(--transition);
+      flex-shrink: 0;
+    }
+    .search-btn:hover { background: var(--navy-light); }
+    .search-results-count {
+      font-size: 13px; color: var(--text-muted); margin-top: 10px; padding-left: 2px;
+    }
+    .search-results-count strong { color: var(--text-primary); }
+
+    /* ─── FILTER CONTROLS ─────────────────────────────────── */
+    .products-filters {
+      max-width: 1200px; margin: 0 auto 32px;
+    }
+    .filter-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-muted); margin-right: 4px; flex-shrink: 0;
+    }
+    .filter-select {
+      padding: 8px 32px 8px 13px;
+      border-radius: var(--r-sm);
+      border: 1.5px solid var(--border);
+      background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%238A9BB2'/%3E%3C/svg%3E") no-repeat right 11px center;
+      background-size: 10px;
+      font-family: var(--font-body); font-size: 13px;
+      color: var(--text-primary); font-weight: 500;
+      -webkit-appearance: none; appearance: none;
+      outline: none; cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .filter-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(30,111,217,.1);
+    }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 100px;
+      border: 1.5px solid var(--border); background: white;
+      font-size: 13px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: border-color var(--transition), background var(--transition), color var(--transition);
+      user-select: none;
+    }
+    .filter-chip:hover { border-color: var(--accent); color: var(--navy); background: var(--sky); }
+    .filter-chip.active {
+      border-color: var(--accent); background: var(--accent); color: white;
+    }
+    .filter-chip input[type="checkbox"] { display: none; }
+    .filter-divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+    .filter-reset {
+      font-size: 13px; font-weight: 500; color: var(--text-muted);
+      padding: 8px 4px; background: none; border: none;
+      transition: color var(--transition);
+    }
+    .filter-reset:hover { color: var(--navy); }
+    .section { padding: 88px 24px; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-eyebrow {
+      display: inline-block;
+      font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 14px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 40px); font-weight: 800;
+      letter-spacing: -.025em; color: var(--navy);
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 17px; color: var(--text-secondary);
+      max-width: 560px; margin: 0 auto; line-height: 1.65;
+    }
+
+    /* ─── PRODUCTS GRID ───────────────────────────────────── */
+    .products-section { background: var(--off-white); }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 24px;
+    }
+    .product-card {
+      background: white; border-radius: var(--r-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: transform var(--transition), box-shadow var(--transition);
+      display: flex; flex-direction: column;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .product-img {
+      width: 100%; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 64px;
+      position: relative; overflow: hidden;
+    }
+    .product-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: var(--accent); color: white;
+      font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 100px;
+    }
+    .product-body { padding: 20px 22px 22px; flex: 1; display: flex; flex-direction: column; }
+    .product-category {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .product-name {
+      font-size: 16px; font-weight: 700; color: var(--text-primary);
+      margin-bottom: 8px; line-height: 1.3;
+    }
+    .product-desc {
+      font-size: 13.5px; color: var(--text-secondary); line-height: 1.55;
+      margin-bottom: 16px; flex: 1;
+    }
+    .product-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto;
+    }
+    .product-price {
+      font-size: 20px; font-weight: 800; color: var(--navy);
+    }
+    .product-price span {
+      font-size: 12px; font-weight: 500; color: var(--text-muted);
+    }
+    .add-to-cart-btn {
+      padding: 9px 18px; border-radius: var(--r-sm);
+      background: var(--navy); color: white;
+      font-size: 13px; font-weight: 600;
+      transition: background var(--transition), transform var(--transition);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .add-to-cart-btn:hover { background: var(--accent); transform: translateY(-1px); }
+    .add-to-cart-btn.added {
+      background: #16a34a;
+      animation: pop .3s ease;
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    /* ─── WHY CHOOSE US ───────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 28px 24px;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(30,111,217,.2);
+    }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: var(--r-sm);
+      background: var(--sky); display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 16px;
+      transition: background var(--transition);
+    }
+    .feature-card:hover .feature-icon { background: rgba(30,111,217,.12); }
+    .feature-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .feature-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ─── STATS BANNER ────────────────────────────────────── */
+    .stats-banner {
+      background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+      padding: 56px 24px;
+    }
+    .stats-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 32px; text-align: center;
+    }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 44px; font-weight: 800; color: white;
+      line-height: 1; margin-bottom: 8px;
+    }
+    .stat-label { font-size: 14px; color: rgba(255,255,255,.55); font-weight: 500; }
+
+    /* ─── FOOTER ──────────────────────────────────────────── */
+    .footer {
+      background: var(--navy);
+      padding: 56px 24px 32px;
+    }
+    .footer-inner {
+      max-width: 1200px; margin: 0 auto;
+    }
+    .footer-top {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px; margin-bottom: 48px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .footer-brand-name {
+      font-family: var(--font-display);
+      font-size: 20px; font-weight: 800; color: white;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .footer-brand-desc { font-size: 14px; color: rgba(255,255,255,.45); line-height: 1.7; max-width: 280px; }
+    .footer-col-title {
+      font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: rgba(255,255,255,.35); margin-bottom: 16px;
+    }
+    .footer-col a {
+      display: block; font-size: 14px; color: rgba(255,255,255,.55);
+      margin-bottom: 10px; transition: color var(--transition);
+    }
+    .footer-col a:hover { color: white; }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 13px; color: rgba(255,255,255,.3); }
+    .footer-legal { display: flex; gap: 20px; }
+    .footer-legal a { font-size: 13px; color: rgba(255,255,255,.35); transition: color var(--transition); }
+    .footer-legal a:hover { color: rgba(255,255,255,.65); }
+
+    /* ─── CART PAGE ───────────────────────────────────────── */
+    .cart-page { min-height: calc(100vh - 68px); background: var(--off-white); padding: 48px 24px; }
+    .cart-inner { max-width: 900px; margin: 0 auto; }
+    .cart-header { margin-bottom: 32px; }
+    .cart-header h1 {
+      font-family: var(--font-display);
+      font-size: 32px; font-weight: 800; color: var(--navy);
+    }
+    .cart-header p { font-size: 15px; color: var(--text-secondary); margin-top: 6px; }
+    .cart-layout { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+    .cart-items-panel {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .cart-item {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item:hover { background: var(--off-white); }
+    .cart-item-img {
+      width: 72px; height: 72px; border-radius: var(--r-sm);
+      background: var(--sky); display: flex; align-items: center; justify-content: center;
+      font-size: 32px; flex-shrink: 0;
+    }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .cart-item-cat { font-size: 12px; color: var(--text-muted); }
+    .cart-item-qty {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .qty-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1.5px solid var(--border); background: white;
+      font-size: 16px; font-weight: 600; color: var(--text-primary);
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .qty-btn:hover { border-color: var(--accent); background: var(--sky); }
+    .qty-num { font-size: 15px; font-weight: 700; color: var(--text-primary); min-width: 20px; text-align: center; }
+    .cart-item-price { font-size: 16px; font-weight: 700; color: var(--navy); min-width: 64px; text-align: right; }
+    .cart-item-remove {
+      color: var(--text-muted); font-size: 20px; padding: 4px 8px;
+      border-radius: var(--r-sm); transition: color var(--transition), background var(--transition);
+    }
+    .cart-item-remove:hover { color: #dc2626; background: #fef2f2; }
+    .cart-empty {
+      text-align: center; padding: 64px 24px;
+    }
+    .cart-empty-icon { font-size: 64px; margin-bottom: 16px; }
+    .cart-empty h2 { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .cart-empty p { font-size: 15px; color: var(--text-secondary); margin-bottom: 24px; }
+    /* Cart summary */
+    .cart-summary {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 24px;
+      box-shadow: var(--shadow-sm); position: sticky; top: 88px;
+    }
+    .cart-summary h3 { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 20px; }
+    .summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;
+    }
+    .summary-row.total {
+      font-size: 17px; font-weight: 700; color: var(--text-primary);
+      padding-top: 14px; margin-top: 4px;
+      border-top: 1px solid var(--border);
+    }
+    .summary-row.total .amt { color: var(--navy); }
+    .summary-note {
+      font-size: 12px; color: var(--text-muted); margin-top: 12px;
+      padding: 10px 12px; background: var(--sky); border-radius: var(--r-sm);
+    }
+
+    /* ─── CHECKOUT PAGE ───────────────────────────────────── */
+    .checkout-page { min-height: calc(100vh - 68px); background: var(--off-white); padding: 48px 24px; }
+    .checkout-inner { max-width: 1100px; margin: 0 auto; }
+    .checkout-header { margin-bottom: 32px; }
+    .checkout-header h1 {
+      font-family: var(--font-display);
+      font-size: 32px; font-weight: 800; color: var(--navy);
+    }
+    .checkout-steps {
+      display: flex; align-items: center; gap: 0; margin-top: 20px;
+    }
+    .step-item {
+      display: flex; align-items: center;
+    }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--border); color: var(--text-muted);
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-dot.active { background: var(--accent); color: white; }
+    .step-dot.done { background: #16a34a; color: white; }
+    .step-label { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); }
+    .step-label.active { color: var(--accent); font-weight: 600; }
+    .step-line {
+      flex: 1; height: 1px; background: var(--border);
+      margin: 0 16px; max-width: 60px;
+    }
+    .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 28px; align-items: start; }
+    .checkout-form-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .form-section-title {
+      font-size: 16px; font-weight: 700; color: var(--navy);
+      margin-bottom: 20px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-icon { font-size: 18px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+    .form-full { grid-column: 1 / -1; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+      font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: .01em;
+    }
+    .form-group input, .form-group select {
+      padding: 11px 14px; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border); background: white;
+      font-size: 14px; color: var(--text-primary);
+      font-family: var(--font-body);
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(30,111,217,.12);
+    }
+    .form-group input::placeholder { color: var(--text-muted); }
+    /* Billing checkbox */
+    .billing-check-wrap {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; background: var(--sky); border-radius: var(--r-sm);
+      margin-bottom: 20px; cursor: pointer;
+    }
+    .billing-check-wrap input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: var(--accent);
+      flex-shrink: 0; padding: 0; border: none; box-shadow: none;
+    }
+    .billing-check-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    /* Payment methods */
+    .payment-methods-display {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 14px 16px; background: var(--off-white); border-radius: var(--r-sm);
+      border: 1px solid var(--border); margin-bottom: 20px;
+    }
+    .payment-methods-label {
+      font-size: 12px; font-weight: 600; color: var(--text-muted); margin-right: 4px;
+    }
+    .payment-card-badge {
+      padding: 5px 12px; border-radius: 6px;
+      border: 1.5px solid var(--border); background: white;
+      font-size: 12px; font-weight: 700; letter-spacing: .04em;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .visa-badge { color: #1A1F71; }
+    .mc-badge { color: #EB001B; }
+    .amex-badge { color: #007BC1; }
+    /* Stripe element container */
+    #card-element {
+      padding: 12px 14px; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border);
+      background: white; transition: border-color var(--transition);
+    }
+    #card-element.StripeElement--focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(30,111,217,.12);
+    }
+    #card-errors {
+      font-size: 13px; color: #dc2626; margin-top: 8px; min-height: 20px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stripe-notice {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text-muted); margin-top: 12px;
+    }
+    .stripe-lock { font-size: 14px; }
+    /* Test mode banner */
+    .test-mode-banner {
+      background: #FFF8E1; border: 1px solid #FFE082;
+      border-radius: var(--r-sm); padding: 10px 14px;
+      font-size: 13px; color: #7B5800; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    /* Order summary panel */
+    .order-summary-panel {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 24px;
+      box-shadow: var(--shadow-sm); position: sticky; top: 88px;
+    }
+    .order-summary-panel h3 { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 20px; }
+    .order-line {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .order-line-img {
+      width: 48px; height: 48px; border-radius: var(--r-sm);
+      background: var(--sky); display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .order-line-info { flex: 1; min-width: 0; }
+    .order-line-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .order-line-qty { font-size: 12px; color: var(--text-muted); }
+    .order-line-price { font-size: 14px; font-weight: 700; color: var(--navy); }
+    .order-divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .order-total-row {
+      display: flex; justify-content: space-between;
+      font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;
+    }
+    .order-total-row.grand {
+      font-size: 18px; font-weight: 800; color: var(--navy);
+      padding-top: 12px; border-top: 2px solid var(--navy);
+      margin-top: 4px;
+    }
+
+    /* ─── SUCCESS SCREEN ──────────────────────────────────── */
+    .success-screen {
+      min-height: calc(100vh - 68px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 24px;
+      background: var(--off-white);
+    }
+    .success-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 56px 48px; text-align: center;
+      max-width: 500px; box-shadow: var(--shadow-lg);
+    }
+    .success-icon {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; margin: 0 auto 24px; color: white;
+      box-shadow: 0 8px 24px rgba(22,163,74,.3);
+    }
+    .success-title { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--navy); margin-bottom: 12px; }
+    .success-sub { font-size: 16px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.6; }
+    .success-order-id {
+      background: var(--sky); border-radius: var(--r-sm); padding: 14px 20px;
+      font-size: 14px; color: var(--text-secondary); margin-bottom: 28px;
+    }
+    .success-order-id strong { color: var(--navy); font-size: 16px; display: block; margin-top: 4px; }
+
+    /* ─── ABOUT PAGE ──────────────────────────────────────── */
+    .about-hero {
+      background: linear-gradient(160deg, #0A1C35, #1B3E6F);
+      padding: 80px 24px; text-align: center;
+    }
+    .about-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 52px); font-weight: 800;
+      color: white; margin-bottom: 16px;
+    }
+    .about-hero p { font-size: 18px; color: rgba(255,255,255,.6); max-width: 600px; margin: 0 auto; }
+    .about-body { padding: 80px 24px; max-width: 900px; margin: 0 auto; }
+    .about-body h2 { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--navy); margin-bottom: 16px; }
+    .about-body p { font-size: 16px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 24px; }
+
+    /* ─── CONTACT PAGE ────────────────────────────────────── */
+    .contact-page { background: var(--off-white); padding: 64px 24px; min-height: calc(100vh - 68px); }
+    .contact-inner { max-width: 900px; margin: 0 auto; }
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+    .contact-info-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 32px; box-shadow: var(--shadow-sm);
+    }
+    .contact-form-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 32px; box-shadow: var(--shadow-sm);
+    }
+    .contact-info-item {
+      display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px;
+    }
+    .contact-icon {
+      width: 40px; height: 40px; border-radius: var(--r-sm);
+      background: var(--sky); display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .contact-info-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 4px; }
+    .contact-info-val { font-size: 14px; color: var(--text-primary); }
+    .contact-form-card textarea {
+      width: 100%; padding: 11px 14px;
+      border-radius: var(--r-sm); border: 1.5px solid var(--border);
+      font-family: var(--font-body); font-size: 14px; color: var(--text-primary);
+      resize: vertical; min-height: 120px; outline: none;
+      transition: border-color var(--transition);
+    }
+    .contact-form-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,111,217,.12); }
+
+    /* ─── TOAST ───────────────────────────────────────────── */
+    .toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 999;
+    }
+    .toast {
+      background: var(--navy); color: white;
+      padding: 12px 18px; border-radius: var(--r-sm);
+      font-size: 14px; font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: flex; align-items: center; gap: 10px;
+      animation: slideIn .3s ease;
+      max-width: 320px;
+    }
+    .toast.success { background: #15803d; }
+    .toast.error { background: #dc2626; }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+    .toast.removing { animation: slideOut .3s ease forwards; }
+
+    /* ─── LOADING SPINNER ─────────────────────────────────── */
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: white; border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .cart-layout { grid-template-columns: 1fr; }
+      .checkout-layout { grid-template-columns: 1fr; }
+      .checkout-form-card { order: 1; }
+      .order-summary-panel { order: 0; position: static; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .nav-links.open {
+        display: flex; flex-direction: column;
+        position: absolute; top: 68px; left: 0; right: 0;
+        background: white; padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow-md);
+      }
+      .form-grid { grid-template-columns: 1fr; }
+      .hero { padding: 64px 24px 72px; }
+      .section { padding: 64px 24px; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+      .footer-top { grid-template-columns: 1fr; gap: 28px; }
+      .checkout-steps { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ───────────────── NAVBAR ───────────────── -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="showPage('home')" style="cursor:pointer">
+      <div class="nav-logo-mark">B</div>
+      BrandForge
+    </div>
+    <div class="nav-links" id="nav-links">
+      <a href="#" onclick="showPage('home')" id="nav-home">Home</a>
+      <a href="#" onclick="showPage('products')" id="nav-products">Products</a>
+      <a href="#" onclick="showPage('about')" id="nav-about">About</a>
+      <a href="#" onclick="showPage('contact')" id="nav-contact">Contact</a>
+      <a href="#" onclick="showPage('cart')" class="nav-cart" id="nav-cart" style="margin-left:8px">
+        🛒 Cart
+        <span class="cart-badge" id="cart-badge">0</span>
+      </a>
+    </div>
+    <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HOME PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-eyebrow">Canadian Corporate Merchandise</div>
+        <h1 class="hero-headline">
+          Premium Corporate Swag<br>
+          for <em>Canadian Businesses</em>
+        </h1>
+        <p class="hero-body">
+          Branded merchandise, employee welcome kits, event giveaways, and promotional products delivered across Canada.
+        </p>
+        <div class="hero-actions">
+          <button class="btn-primary" onclick="showPage('contact')">
+            Get a Quote <span>→</span>
+          </button>
+          <button class="btn-secondary" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.07)" onclick="showPage('products')">
+            Browse Products
+          </button>
+        </div>
+        <div class="hero-trust">
+          <span class="hero-trust-label">Why BrandForge</span>
+          <div class="trust-pills">
+            <span class="trust-pill">🇨🇦 Canadian Company</span>
+            <span class="trust-pill">⚡ Ships Nationwide</span>
+            <span class="trust-pill">🎨 Free Mockups</span>
+            <span class="trust-pill">✔ Satisfaction Guarantee</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-card-stack">
+          <div class="hero-card">
+            <div class="hcard-icon">👕</div>
+            <div class="hcard-title">Premium Polo Shirts</div>
+            <div class="hcard-sub">MOQ 25 units · Custom embroidery</div>
+            <div class="hcard-bar"><div class="hcard-bar-fill" style="width:78%"></div></div>
+          </div>
+          <div class="hero-card">
+            <div class="hcard-icon">📦</div>
+            <div class="hcard-title">Welcome Kits</div>
+            <div class="hcard-sub">Fully branded · Ships in 5 days</div>
+            <div class="hcard-bar"><div class="hcard-bar-fill" style="width:62%"></div></div>
+          </div>
+          <div class="hero-card">
+            <div class="hcard-icon">🎒</div>
+            <div class="hcard-title">Branded Backpacks</div>
+            <div class="hcard-sub">Enterprise grade · 500+ orders</div>
+            <div class="hcard-bar"><div class="hcard-bar-fill" style="width:91%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUTIONS SECTION -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-eyebrow">What We Do</span>
+        <h2 class="section-title">Merchandise solutions for<br>every business need</h2>
+        <p class="section-subtitle">From day-one onboarding kits to conference giveaways — we handle the merchandise so you can focus on your people.</p>
+      </div>
+      <div class="solutions-grid">
+        <div class="solution-card">
+          <div class="solution-icon">🎁</div>
+          <div class="solution-title">Employee Welcome Kits</div>
+          <div class="solution-desc">Make a lasting first impression with fully branded new-hire packages — custom box, apparel, drinkware, and accessories included.</div>
+          <button class="solution-cta" onclick="showPage('contact')">Request a Free Mockup →</button>
+        </div>
+        <div class="solution-card">
+          <div class="solution-icon">🎪</div>
+          <div class="solution-title">Conference Swag</div>
+          <div class="solution-desc">High-impact giveaways that people actually keep. Tote bags, notebooks, tech accessories, and more — designed for your brand.</div>
+          <button class="solution-cta" onclick="showPage('contact')">Get Pricing in Under 2 Hours →</button>
+        </div>
+        <div class="solution-card">
+          <div class="solution-icon">🏅</div>
+          <div class="solution-title">Executive Gifts</div>
+          <div class="solution-desc">Premium branded items for clients, partners, and leadership — leather goods, engraved sets, and curated luxury bundles.</div>
+          <button class="solution-cta" onclick="showPage('contact')">Request a Quote →</button>
+        </div>
+        <div class="solution-card">
+          <div class="solution-icon">🌿</div>
+          <div class="solution-title">Eco-Friendly Collections</div>
+          <div class="solution-desc">Sustainable merchandise from recycled and organic materials. Align your brand with values that matter to your team and clients.</div>
+          <button class="solution-cta" onclick="showPage('contact')">Request a Free Mockup →</button>
+        </div>
+        <div class="solution-card">
+          <div class="solution-icon">📦</div>
+          <div class="solution-title">New Hire Packages</div>
+          <div class="solution-desc">Scalable onboarding kits shipped directly to remote employees across Canada — same branding, delivered anywhere.</div>
+          <button class="solution-cta" onclick="showPage('contact')">Get Pricing in Under 2 Hours →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY CHOOSE US -->
+  <section class="section" style="background:var(--off-white)">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-eyebrow">Why BrandForge</span>
+        <h2 class="section-title">Built for Canadian businesses,<br>backed by results</h2>
+        <p class="section-subtitle">Every reason you need to make BrandForge your go-to merchandise partner.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🇨🇦</div>
+          <div class="feature-title">Canadian Company</div>
+          <div class="feature-desc">Proudly Canadian, serving businesses coast to coast. Local support, domestic warehousing, and deep knowledge of Canadian shipping logistics.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Fast Turnaround</div>
+          <div class="feature-desc">Standard orders ship within 5 business days. Rush production available for urgent campaigns, events, and onboarding timelines.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤝</div>
+          <div class="feature-title">Dedicated Account Manager</div>
+          <div class="feature-desc">One named contact from first brief to final delivery. Your account manager handles sourcing, approvals, and reorders — no ticketing queues.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <div class="feature-title">Low Minimum Orders</div>
+          <div class="feature-desc">Starting from just 10 units on most products. No need to over-order — scale up gradually and only pay for what you need.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <div class="feature-title">Free Digital Mockups</div>
+          <div class="feature-desc">See exactly how your logo looks on every product before committing. Our design team delivers branded previews within 24 hours, at no cost.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✅</div>
+          <div class="feature-title">Satisfaction Guarantee</div>
+          <div class="feature-desc">If your order doesn't match the approved mockup, we'll reprint or refund — no questions asked. Quality is our promise, not just our pitch.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-title">Secure Payments</div>
+          <div class="feature-desc">Bank-level encryption via Stripe. Supports corporate purchase orders, Net 30 terms, and major credit cards for enterprise accounts.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-banner">
+    <div class="stats-inner">
+      <div>
+        <div class="stat-num">1,200+</div>
+        <div class="stat-label">Canadian Businesses Served</div>
+      </div>
+      <div>
+        <div class="stat-num">2M+</div>
+        <div class="stat-label">Items Shipped Across Canada</div>
+      </div>
+      <div>
+        <div class="stat-num">98%</div>
+        <div class="stat-label">On-Time Delivery Rate</div>
+      </div>
+      <div>
+        <div class="stat-num">24 hrs</div>
+        <div class="stat-label">Average Mockup Turnaround</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUOTE CTA STRIP -->
+  <section style="background:var(--sky);padding:40px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+    <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:19px;font-weight:700;color:var(--navy)">Ready to brand your team?</div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:4px">Free digital mockups · No commitment required · Pricing in under 2 hours</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="showPage('contact')">Request a Free Mockup</button>
+        <button class="btn-secondary" onclick="showPage('contact')">Get Pricing in Under 2 Hours</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED PRODUCTS TEASER -->
+  <section class="section products-section">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-eyebrow">Popular This Quarter</span>
+        <h2 class="section-title">Most requested items</h2>
+        <p class="section-subtitle">Explore our top merchandise — all customizable with your brand identity and shipped across Canada.</p>
+      </div>
+      <div class="products-grid" id="home-products-grid"></div>
+      <div style="text-align:center; margin-top:40px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-navy" onclick="showPage('products')">View Full Catalogue →</button>
+        <button class="btn-secondary" onclick="showPage('contact')">Request a Quote</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PRODUCTS PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-products">
+  <div style="background:var(--off-white);min-height:calc(100vh - 68px)">
+
+    <!-- Products page header -->
+    <div style="background:linear-gradient(160deg,#0A1C35,#0F2744);padding:48px 24px 56px;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 600px 300px at 70% 50%,rgba(30,111,217,.15),transparent);pointer-events:none"></div>
+      <div style="max-width:1200px;margin:0 auto;position:relative;z-index:1">
+        <span class="section-eyebrow" style="color:rgba(255,255,255,.5)">Full Catalogue</span>
+        <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,44px);font-weight:800;color:white;letter-spacing:-.025em;margin:8px 0 12px;line-height:1.1">
+          Corporate Merchandise
+        </h1>
+        <p style="font-size:16px;color:rgba(255,255,255,.55);max-width:540px">All items available for bulk orders with free custom branding mockups. <strong style="color:rgba(255,255,255,.8)">Get pricing in under 2 hours.</strong></p>
+      </div>
+    </div>
+
+    <div style="max-width:1200px;margin:0 auto;padding:36px 24px 80px">
+
+      <!-- SEARCH BAR -->
+      <div class="products-search-bar" style="margin-left:0;margin-right:0">
+        <div class="search-wrap">
+          <div class="search-icon">🔍</div>
+          <input
+            class="search-input"
+            id="product-search"
+            type="text"
+            placeholder="Search for Stanley tumbler, notebook, hoodie, backpack, wireless charger…"
+            oninput="handleSearch(this.value)"
+            autocomplete="off"
+          />
+          <button class="search-clear" id="search-clear-btn" onclick="clearSearch()" title="Clear">✕</button>
+          <button class="search-btn">Search</button>
+        </div>
+        <div class="search-results-count" id="search-results-count"></div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="products-filters">
+        <div class="filter-row">
+          <span class="filter-label">Filter:</span>
+
+          <select class="filter-select" id="filter-budget" onchange="applyFilters()">
+            <option value="">💰 Any Budget</option>
+            <option value="0-25">Under $25</option>
+            <option value="25-50">$25 – $50</option>
+            <option value="50-100">$50 – $100</option>
+            <option value="100-999">$100+</option>
+          </select>
+
+          <select class="filter-select" id="filter-qty" onchange="applyFilters()">
+            <option value="">📦 Any Quantity</option>
+            <option value="10">MOQ 10+</option>
+            <option value="25">MOQ 25+</option>
+            <option value="50">MOQ 50+</option>
+          </select>
+
+          <select class="filter-select" id="filter-category" onchange="applyFilters()">
+            <option value="">🏷 All Categories</option>
+            <option value="Apparel">Apparel</option>
+            <option value="Headwear">Headwear</option>
+            <option value="Drinkware">Drinkware</option>
+            <option value="Bags">Bags</option>
+            <option value="Stationery">Stationery</option>
+            <option value="Technology">Technology</option>
+            <option value="Kits">Kits</option>
+          </select>
+
+          <div class="filter-divider"></div>
+
+          <label class="filter-chip" id="chip-canada">
+            <input type="checkbox" onchange="applyFilters()" /> 🇨🇦 Made in Canada
+          </label>
+
+          <label class="filter-chip" id="chip-rush">
+            <input type="checkbox" onchange="applyFilters()" /> ⚡ Rush Delivery
+          </label>
+
+          <div class="filter-divider"></div>
+          <button class="filter-reset" onclick="resetFilters()">Reset all</button>
+        </div>
+      </div>
+
+      <!-- PRODUCTS GRID -->
+      <div class="products-grid" id="all-products-grid"></div>
+
+      <!-- NO RESULTS -->
+      <div id="no-results-state" style="display:none;text-align:center;padding:64px 24px">
+        <div style="font-size:56px;margin-bottom:16px">🔍</div>
+        <h3 style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px">No products found</h3>
+        <p style="font-size:15px;color:var(--text-secondary);margin-bottom:20px">Try a different search term or adjust your filters.</p>
+        <button class="btn-secondary" onclick="resetFilters();clearSearch()">Clear all filters</button>
+      </div>
+
+      <!-- QUOTE CTA BANNER -->
+      <div id="quote-cta-banner" style="margin-top:56px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));border-radius:var(--r-xl);padding:40px 48px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px">Can't find what you need?</div>
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:white;margin-bottom:8px">Get pricing in under 2 hours</div>
+          <div style="font-size:15px;color:rgba(255,255,255,.55)">Tell us what you're looking for and we'll source it — with a free digital mockup included.</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-shrink:0;flex-wrap:wrap">
+          <button class="btn-primary" onclick="showPage('contact')" style="background:white;color:var(--navy);box-shadow:none">Request a Free Mockup</button>
+          <button class="btn-secondary" onclick="showPage('contact')" style="border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.8);background:rgba(255,255,255,.07)">Request a Quote →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CART PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-cart">
+  <div class="cart-page">
+    <div class="cart-inner">
+      <div class="cart-header">
+        <h1>Shopping Cart</h1>
+        <p id="cart-count-label">0 items in your cart</p>
+      </div>
+      <div class="cart-layout">
+        <div class="cart-items-panel" id="cart-items-panel">
+          <div class="cart-empty" id="cart-empty-state">
+            <div class="cart-empty-icon">🛒</div>
+            <h2>Your cart is empty</h2>
+            <p>Add some products to get started</p>
+            <button class="btn-primary" onclick="showPage('products')">Browse Products</button>
+          </div>
+        </div>
+        <div class="cart-summary" id="cart-summary-panel">
+          <h3>Order Summary</h3>
+          <div class="summary-row"><span>Subtotal</span><span id="summary-subtotal">$0.00</span></div>
+          <div class="summary-row"><span>Estimated Shipping</span><span id="summary-shipping">Free</span></div>
+          <div class="summary-row"><span>Tax (13% HST)</span><span id="summary-tax">$0.00</span></div>
+          <div class="summary-row total"><span>Total</span><span class="amt" id="summary-total">$0.00</span></div>
+          <div class="summary-note">Bulk discounts apply automatically at checkout. Minimum order 25 units for custom branding.</div>
+          <button class="btn-primary" style="width:100%;margin-top:20px;justify-content:center" id="checkout-btn" onclick="goToCheckout()">
+            Proceed to Checkout →
+          </button>
+          <button class="btn-secondary" style="width:100%;margin-top:10px;justify-content:center" onclick="showPage('products')">
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CHECKOUT PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-checkout">
+  <div class="checkout-page">
+    <div class="checkout-inner">
+      <div class="checkout-header">
+        <h1>Secure Checkout</h1>
+        <div class="checkout-steps">
+          <div class="step-item">
+            <div class="step-dot active" id="step1-dot">1</div>
+            <span class="step-label active">Contact</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item">
+            <div class="step-dot active" id="step2-dot">2</div>
+            <span class="step-label active">Shipping</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item">
+            <div class="step-dot active" id="step3-dot">3</div>
+            <span class="step-label active">Payment</span>
+          </div>
+        </div>
+      </div>
+      <div class="checkout-layout">
+        <!-- FORM -->
+        <div class="checkout-form-card">
+          <form id="checkout-form" onsubmit="handleCheckout(event)">
+
+            <!-- CONTACT INFO -->
+            <div class="form-section-title">
+              <span class="form-section-icon">👤</span> Contact Information
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>First Name *</label>
+                <input type="text" name="firstName" placeholder="Jane" required />
+              </div>
+              <div class="form-group">
+                <label>Last Name *</label>
+                <input type="text" name="lastName" placeholder="Smith" required />
+              </div>
+              <div class="form-group form-full">
+                <label>Business Email *</label>
+                <input type="email" name="email" placeholder="jane.smith@company.com" required />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" name="phone" placeholder="+1 (555) 000-0000" />
+              </div>
+              <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" name="company" placeholder="Acme Corporation" />
+              </div>
+            </div>
+
+            <!-- SHIPPING ADDRESS -->
+            <div class="form-section-title">
+              <span class="form-section-icon">📦</span> Shipping Address
+            </div>
+            <div class="form-grid">
+              <div class="form-group form-full">
+                <label>Street Address *</label>
+                <input type="text" name="shipAddress1" placeholder="123 Business Ave, Suite 400" required />
+              </div>
+              <div class="form-group form-full">
+                <label>Address Line 2</label>
+                <input type="text" name="shipAddress2" placeholder="Floor, unit, building (optional)" />
+              </div>
+              <div class="form-group">
+                <label>City *</label>
+                <input type="text" name="shipCity" placeholder="Toronto" required />
+              </div>
+              <div class="form-group">
+                <label>Province / State *</label>
+                <input type="text" name="shipState" placeholder="Ontario" required />
+              </div>
+              <div class="form-group">
+                <label>Postal / ZIP Code *</label>
+                <input type="text" name="shipZip" placeholder="M5H 2N2" required />
+              </div>
+              <div class="form-group">
+                <label>Country *</label>
+                <select name="shipCountry" required>
+                  <option value="">Select country</option>
+                  <option value="CA" selected>Canada</option>
+                  <option value="US">United States</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- BILLING ADDRESS -->
+            <div class="form-section-title">
+              <span class="form-section-icon">🏢</span> Billing Address
+            </div>
+            <label class="billing-check-wrap">
+              <input type="checkbox" id="same-as-shipping" checked onchange="toggleBillingAddress()" />
+              <span class="billing-check-label">Same as shipping address</span>
+            </label>
+            <div id="billing-address-fields" style="display:none">
+              <div class="form-grid">
+                <div class="form-group form-full">
+                  <label>Street Address *</label>
+                  <input type="text" name="billAddress1" placeholder="123 Business Ave, Suite 400" />
+                </div>
+                <div class="form-group">
+                  <label>City *</label>
+                  <input type="text" name="billCity" placeholder="Toronto" />
+                </div>
+                <div class="form-group">
+                  <label>Province / State *</label>
+                  <input type="text" name="billState" placeholder="Ontario" />
+                </div>
+                <div class="form-group">
+                  <label>Postal / ZIP *</label>
+                  <input type="text" name="billZip" placeholder="M5H 2N2" />
+                </div>
+                <div class="form-group">
+                  <label>Country *</label>
+                  <select name="billCountry">
+                    <option value="CA">Canada</option>
+                    <option value="US">United States</option>
+                    <option value="GB">United Kingdom</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- PAYMENT -->
+            <div class="form-section-title">
+              <span class="form-section-icon">💳</span> Payment Details
+            </div>
+            <div class="test-mode-banner">
+              ⚠️ <strong>Test Mode Active.</strong> Use card 4242 4242 4242 4242, any future expiry, and any 3-digit CVV.
+            </div>
+            <div class="payment-methods-display">
+              <span class="payment-methods-label">Accepted:</span>
+              <span class="payment-card-badge visa-badge">
+                <svg width="38" height="12" viewBox="0 0 38 12" fill="none"><path d="M14.73 11.7H11.9L13.65.3h2.83L14.73 11.7Zm-5.36-11.4L6.9 8.19l-.35-1.75L5.7 1.65C5.5 1.1 5.1.85 4.58.3H.07L0 .56C1.05.8 2.04 1.2 2.92 1.74L5.65 11.7H8.6l4.51-11.4H9.37ZM35.76.3l-3.03 11.4H30.1L33.13.3h2.63Zm-7.1 7.66c.01-1.39-1.97-1.47-1.96-2.09.01-.19.19-.39.59-.44.2-.02.74-.05 1.36.24l.24-1.12A3.73 3.73 0 0 0 27.47 4c-1.79 0-3.05.95-3.06 2.31-.01 1.01.9 1.57 1.59 1.9.7.34.94.56.94.87 0 .47-.56.68-.89.68-.82.01-1.3-.22-1.68-.4l-.3 1.37c.39.17 1.1.33 1.83.33 1.9 0 3.14-.94 3.15-2.39-.01-.39-.09-.82-.39-1.31ZM23.28.3l-2.95 11.4h-2.57L20.71.3h2.57Z" fill="#1A1F71"/></svg>
+              </span>
+              <span class="payment-card-badge mc-badge">
+                <svg width="32" height="20" viewBox="0 0 32 20" fill="none"><circle cx="12" cy="10" r="9" fill="#EB001B"/><circle cx="20" cy="10" r="9" fill="#F79E1B"/><path d="M16 4.47A9 9 0 0 1 18.53 10 9 9 0 0 1 16 15.53 9 9 0 0 1 13.47 10 9 9 0 0 1 16 4.47Z" fill="#FF5F00"/></svg>
+              </span>
+              <span class="payment-card-badge amex-badge">
+                <svg width="36" height="12" viewBox="0 0 36 12" fill="none"><text x="0" y="10" font-family="Arial" font-size="10" font-weight="700" fill="#007BC1">AMEX</text></svg>
+              </span>
+            </div>
+            <div class="form-grid" style="margin-bottom:16px">
+              <div class="form-group form-full">
+                <label>Cardholder Name *</label>
+                <input type="text" name="cardName" id="cardName" placeholder="Jane Smith" required />
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label>Card Details *</label>
+              <div id="card-element"></div>
+              <div id="card-errors"></div>
+            </div>
+            <div class="stripe-notice">
+              <span class="stripe-lock">🔒</span>
+              Your payment is encrypted and secured by Stripe. We never store raw card data.
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%;margin-top:28px;justify-content:center;font-size:16px;padding:16px" id="pay-btn">
+              Pay Now — <span id="pay-total">$0.00</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- ORDER SUMMARY PANEL -->
+        <div class="order-summary-panel">
+          <h3>Order Summary</h3>
+          <div id="order-line-items"></div>
+          <div class="order-divider"></div>
+          <div class="order-total-row"><span>Subtotal</span><span id="os-subtotal">$0.00</span></div>
+          <div class="order-total-row"><span>Shipping</span><span>Free</span></div>
+          <div class="order-total-row"><span>Tax (13% HST)</span><span id="os-tax">$0.00</span></div>
+          <div class="order-total-row grand"><span>Total</span><span id="os-total">$0.00</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SUCCESS PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-success">
+  <div class="success-screen">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Order Confirmed!</div>
+      <div class="success-sub">Thank you for your order. A confirmation email has been sent to your business address. Your account manager will reach out within 1 business day.</div>
+      <div class="success-order-id">
+        Order Reference
+        <strong id="success-order-id">BF-XXXXXXX</strong>
+      </div>
+      <button class="btn-primary" onclick="showPage('home')" style="justify-content:center">
+        Return to Home
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABOUT PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="about-hero">
+    <h1>About BrandForge</h1>
+    <p>We've been the go-to corporate merchandise partner for Canadian businesses since 2011. Proudly Canadian, coast to coast.</p>
+  </div>
+  <div class="about-body">
+    <h2>Our Mission</h2>
+    <p>BrandForge exists to take the friction out of corporate merchandise. We know that sourcing, customizing, and delivering branded products for hundreds or thousands of employees is genuinely hard — and we've built our entire operation around making it easy, predictable, and scalable.</p>
+    <p>From onboarding kits for new hires to branded giveaways at industry events, we deliver quality merchandise on deadline. Our clients range from growing startups to established Canadian enterprises, and we treat every order — large or small — with the same care and attention.</p>
+    <h2>Our Process</h2>
+    <p>When you partner with BrandForge, you're assigned a dedicated account manager who becomes an extension of your team. They'll help you pick the right products, configure custom branding, manage approvals, and coordinate delivery — so your team focuses on what matters.</p>
+    <p>Every product is quality-checked before it leaves our warehouse. We work exclusively with ISO-certified manufacturers and conduct multi-point inspections on all outbound orders. Our 98% on-time delivery rate speaks for itself.</p>
+    <h2>Sustainability</h2>
+    <p>We're committed to responsible sourcing. Our product catalogue includes a growing range of sustainably produced items, recycled materials, and ethically certified factories. Ask your account manager about our eco-range.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CONTACT PAGE
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-contact">
+  <div class="contact-page">
+    <div class="contact-inner">
+      <div class="section-header" style="text-align:left;margin-bottom:8px">
+        <span class="section-eyebrow">Contact Us</span>
+        <h2 class="section-title">Request a Quote</h2>
+        <p class="section-subtitle" style="max-width:none">Tell us about your project and we'll send back pricing and a free digital mockup — usually within 2 hours on business days.</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 8px">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:var(--sky);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--navy)">✅ Free digital mockup included</div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:var(--sky);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--navy)">⚡ Pricing in under 2 hours</div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:var(--sky);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:13px;font-weight:600;color:var(--navy)">🇨🇦 Canadian company</div>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-info-card">
+          <h3 style="font-size:17px;font-weight:700;color:var(--navy);margin-bottom:24px">Get in Touch</h3>
+          <div class="contact-info-item">
+            <div class="contact-icon">📍</div>
+            <div>
+              <div class="contact-info-label">Office</div>
+              <div class="contact-info-val">100 King Street West, Suite 5600<br>Toronto, ON M5X 1C9, Canada</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-icon">📧</div>
+            <div>
+              <div class="contact-info-label">Email</div>
+              <div class="contact-info-val">enterprise@brandforge.co</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-icon">📞</div>
+            <div>
+              <div class="contact-info-label">Phone</div>
+              <div class="contact-info-val">+1 (416) 555-0190</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-icon">🕐</div>
+            <div>
+              <div class="contact-info-label">Business Hours</div>
+              <div class="contact-info-val">Monday – Friday, 8 AM – 6 PM ET</div>
+            </div>
+          </div>
+        </div>
+        <div class="contact-form-card">
+          <h3 style="font-size:17px;font-weight:700;color:var(--navy);margin-bottom:20px">Send a Message</h3>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="form-group">
+              <label>Your Name</label>
+              <input type="text" placeholder="Jane Smith" />
+            </div>
+            <div class="form-group">
+              <label>Business Email</label>
+              <input type="email" placeholder="jane@company.com" />
+            </div>
+            <div class="form-group">
+              <label>Subject</label>
+              <input type="text" placeholder="Bulk order inquiry for Q3" />
+            </div>
+            <div class="form-group">
+              <label>Message</label>
+              <textarea placeholder="Tell us about your project — number of units, timeline, and any branding requirements."></textarea>
+            </div>
+            <button class="btn-primary" style="justify-content:center" onclick="showToast('Request received! We\'ll send your mockup and pricing within 2 hours.','success')">
+              Request a Free Mockup →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER (shared)
+═══════════════════════════════════════════════════════════ -->
+<footer class="footer" id="shared-footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-name">
+          <div class="nav-logo-mark" style="background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.15)">B</div>
+          BrandForge
+        </div>
+        <p class="footer-brand-desc">Proudly Canadian. Premium branded merchandise and corporate swag delivered to businesses across Canada — fast, customized, guaranteed.</p>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Company</div>
+        <a href="#" onclick="showPage('about')">About Us</a>
+        <a href="#" onclick="showPage('contact')">Contact</a>
+        <a href="#">Careers</a>
+        <a href="#">Press</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Products</div>
+        <a href="#" onclick="showPage('products')">Full Catalogue</a>
+        <a href="#">Bulk Ordering</a>
+        <a href="#">Custom Branding</a>
+        <a href="#">Sample Kits</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Support</div>
+        <a href="#">FAQ</a>
+        <a href="#">Shipping Policy</a>
+        <a href="#" onclick="showPage('contact')">Contact Support</a>
+        <a href="#">Track Order</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 BrandForge Inc. All rights reserved.</div>
+      <div class="footer-legal">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#" onclick="showPage('contact')">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+/* ─── PRODUCT DATA ─────────────────────────────────────── */
+const PRODUCTS = [
+  {
+    id: 1, name: "Classic Polo Shirt", category: "Apparel",
+    emoji: "👕", price: 42.00,
+    badges: [{ type: 'bestseller', label: '⭐ Best Seller' }],
+    desc: "100% piqué cotton polo with embroidered logo. Available in 12 colours. MOQ 25 units.",
+    bg: "#EBF4FF", canada: false, rush: true
+  },
+  {
+    id: 2, name: "Branded Baseball Cap", category: "Headwear",
+    emoji: "🧢", price: 24.00,
+    badges: [{ type: 'trending', label: '🔥 Trending' }],
+    desc: "Structured six-panel cap with embroidered logo. One size fits most. MOQ 50 units.",
+    bg: "#F0FDF4", canada: false, rush: true
+  },
+  {
+    id: 3, name: "Corporate Mug", category: "Drinkware",
+    emoji: "☕", price: 18.00,
+    badges: [{ type: 'canada', label: '🇨🇦 Made in Canada' }],
+    desc: "Ceramic 350ml mug with full-colour logo wrap. Dishwasher safe. MOQ 24 units.",
+    bg: "#FFF7ED", canada: true, rush: false
+  },
+  {
+    id: 4, name: "Executive Backpack", category: "Bags",
+    emoji: "🎒", price: 89.00,
+    badges: [{ type: 'new', label: '✨ New' }, { type: 'rush', label: '⚡ Ships in 3 Days' }],
+    desc: "15\" laptop backpack in premium nylon with laser-engraved buckle branding. MOQ 10 units.",
+    bg: "#FDF4FF", canada: false, rush: true
+  },
+  {
+    id: 5, name: "Premium Notebook", category: "Stationery",
+    emoji: "📓", price: 22.00,
+    badges: [{ type: 'canada', label: '🇨🇦 Made in Canada' }, { type: 'bestseller', label: '⭐ Best Seller' }],
+    desc: "A5 hardcover notebook with debossed cover logo. 192 lined pages. MOQ 50 units.",
+    bg: "#FFFBEB", canada: true, rush: false
+  },
+  {
+    id: 6, name: "Digital Walkie-Talkie Set", category: "Technology",
+    emoji: "📡", price: 145.00,
+    badges: [{ type: 'popular', label: '🔥 Popular' }],
+    desc: "Pair of waterproof UHF radios with custom sticker branding. 5km range. MOQ 5 sets.",
+    bg: "#F0F9FF", canada: false, rush: false
+  },
+  {
+    id: 7, name: "Employee Welcome Kit", category: "Kits",
+    emoji: "🎁", price: 198.00,
+    badges: [{ type: 'premium', label: '🏅 Premium' }, { type: 'trending', label: '🔥 Trending' }],
+    desc: "Curated new-hire kit: polo, mug, notebook, pen, and branded carry bag. MOQ 10 units.",
+    bg: "#FEF2F2", canada: false, rush: false
+  },
+  {
+    id: 8, name: "Insulated Water Bottle", category: "Drinkware",
+    emoji: "🍶", price: 35.00,
+    badges: [{ type: 'rush', label: '⚡ Ships in 3 Days' }],
+    desc: "500ml double-wall stainless steel bottle. Laser-engraved logo. 24hr temperature retention.",
+    bg: "#F0FDF4", canada: false, rush: true
+  },
+  {
+    id: 9, name: "Eco Tote Bag", category: "Bags",
+    emoji: "🛍️", price: 16.00,
+    badges: [{ type: 'canada', label: '🇨🇦 Made in Canada' }, { type: 'trending', label: '🔥 Trending' }],
+    desc: "Natural cotton canvas tote with screen-printed logo. 100% organic cotton. MOQ 50 units.",
+    bg: "#F0FDF4", canada: true, rush: true
+  },
+  {
+    id: 10, name: "Branded Hoodie", category: "Apparel",
+    emoji: "🧥", price: 68.00,
+    badges: [{ type: 'bestseller', label: '⭐ Best Seller' }, { type: 'rush', label: '⚡ Ships in 3 Days' }],
+    desc: "Heavyweight fleece hoodie with embroidered chest logo. Unisex sizing. MOQ 25 units.",
+    bg: "#EBF4FF", canada: false, rush: true
+  },
+  {
+    id: 11, name: "Wireless Charger Pad", category: "Technology",
+    emoji: "🔋", price: 52.00,
+    badges: [{ type: 'new', label: '✨ New' }],
+    desc: "15W Qi-certified wireless charger with full-colour logo pad. Compatible with all Qi devices. MOQ 20 units.",
+    bg: "#F0F9FF", canada: false, rush: false
+  },
+  {
+    id: 12, name: "Stanley-Style Tumbler", category: "Drinkware",
+    emoji: "🥤", price: 44.00,
+    badges: [{ type: 'trending', label: '🔥 Trending' }, { type: 'bestseller', label: '⭐ Best Seller' }],
+    desc: "40oz vacuum-insulated tumbler with handle. Laser-engraved logo. Keeps drinks cold 48 hours. MOQ 25 units.",
+    bg: "#FFF7ED", canada: false, rush: false
+  },
+];
+
+/* ─── CART STATE ───────────────────────────────────────── */
+let cart = {};  // { productId: quantity }
+
+function getCartItems() {
+  return Object.entries(cart)
+    .filter(([_, qty]) => qty > 0)
+    .map(([id, qty]) => {
+      const p = PRODUCTS.find(p => p.id === parseInt(id));
+      return { ...p, qty };
+    });
+}
+
+function getCartSubtotal() {
+  return getCartItems().reduce((sum, item) => sum + item.price * item.qty, 0);
+}
+
+function getCartTax() {
+  return getCartSubtotal() * 0.13;
+}
+
+function getCartTotal() {
+  return getCartSubtotal() + getCartTax();
+}
+
+function getCartCount() {
+  return Object.values(cart).reduce((s, q) => s + q, 0);
+}
+
+function updateCartBadge() {
+  const count = getCartCount();
+  const badge = document.getElementById('cart-badge');
+  badge.textContent = count;
+  badge.classList.toggle('visible', count > 0);
+}
+
+function addToCart(productId) {
+  cart[productId] = (cart[productId] || 0) + 1;
+  updateCartBadge();
+  const product = PRODUCTS.find(p => p.id === productId);
+  showToast(`${product.emoji} ${product.name} added to cart`, 'success');
+  renderCartPage();
+  renderCheckoutSummary();
+}
+
+function removeFromCart(productId) {
+  delete cart[productId];
+  updateCartBadge();
+  renderCartPage();
+  renderCheckoutSummary();
+}
+
+function changeQty(productId, delta) {
+  const newQty = (cart[productId] || 0) + delta;
+  if (newQty <= 0) {
+    removeFromCart(productId);
+  } else {
+    cart[productId] = newQty;
+    renderCartPage();
+    renderCheckoutSummary();
+    updateCartBadge();
+  }
+}
+
+/* ─── RENDER PRODUCTS ──────────────────────────────────── */
+function renderProductCard(product, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  card.dataset.id = product.id;
+
+  const badgesHtml = product.badges && product.badges.length
+    ? `<div class="product-badges">${product.badges.map(b =>
+        `<span class="pbadge pbadge-${b.type}">${b.label}</span>`
+      ).join('')}</div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="product-img" style="background:${product.bg}">
+      ${badgesHtml}
+      <span>${product.emoji}</span>
+    </div>
+    <div class="product-body">
+      <div class="product-category">${product.category}</div>
+      <div class="product-name">${product.name}</div>
+      <div class="product-desc">${product.desc}</div>
+      <div class="product-footer">
+        <div class="product-price">$${product.price.toFixed(2)} <span>/ unit</span></div>
+        <button class="add-to-cart-btn" id="atc-${product.id}-${containerId}" onclick="handleAddToCart(${product.id}, this)">
+          + Add
+        </button>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function renderProductGrids() {
+  const homeGrid = document.getElementById('home-products-grid');
+  const allGrid = document.getElementById('all-products-grid');
+  if (homeGrid) {
+    homeGrid.innerHTML = '';
+    PRODUCTS.slice(0, 4).forEach(p => renderProductCard(p, 'home-products-grid'));
+  }
+  if (allGrid) {
+    renderAllProducts(PRODUCTS);
+  }
+}
+
+function renderAllProducts(products) {
+  const allGrid = document.getElementById('all-products-grid');
+  const noResults = document.getElementById('no-results-state');
+  if (!allGrid) return;
+  allGrid.innerHTML = '';
+  if (products.length === 0) {
+    allGrid.style.display = 'none';
+    if (noResults) noResults.style.display = 'block';
+  } else {
+    allGrid.style.display = 'grid';
+    if (noResults) noResults.style.display = 'none';
+    products.forEach(p => renderProductCard(p, 'all-products-grid'));
+  }
+  const countEl = document.getElementById('search-results-count');
+  if (countEl) {
+    const total = PRODUCTS.length;
+    if (products.length === total) {
+      countEl.textContent = '';
+    } else {
+      countEl.innerHTML = `Showing <strong>${products.length}</strong> of <strong>${total}</strong> products`;
+    }
+  }
+}
+
+/* ─── SEARCH & FILTER ──────────────────────────────────── */
+let activeSearch = '';
+
+function handleSearch(val) {
+  activeSearch = val.trim().toLowerCase();
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (clearBtn) clearBtn.classList.toggle('visible', val.length > 0);
+  applyFilters();
+}
+
+function clearSearch() {
+  const input = document.getElementById('product-search');
+  if (input) input.value = '';
+  activeSearch = '';
+  const clearBtn = document.getElementById('search-clear-btn');
+  if (clearBtn) clearBtn.classList.remove('visible');
+  applyFilters();
+}
+
+function applyFilters() {
+  const budget = document.getElementById('filter-budget')?.value || '';
+  const qty = document.getElementById('filter-qty')?.value || '';
+  const category = document.getElementById('filter-category')?.value || '';
+  const chipCanada = document.getElementById('chip-canada')?.querySelector('input')?.checked || false;
+  const chipRush = document.getElementById('chip-rush')?.querySelector('input')?.checked || false;
+
+  // Update chip active states
+  document.getElementById('chip-canada')?.classList.toggle('active', chipCanada);
+  document.getElementById('chip-rush')?.classList.toggle('active', chipRush);
+
+  let filtered = PRODUCTS.filter(p => {
+    // Search
+    if (activeSearch) {
+      const haystack = `${p.name} ${p.category} ${p.desc}`.toLowerCase();
+      if (!haystack.includes(activeSearch)) return false;
+    }
+    // Budget
+    if (budget) {
+      const [min, max] = budget.split('-').map(Number);
+      if (p.price < min || p.price > max) return false;
+    }
+    // Category
+    if (category && p.category !== category) return false;
+    // Canada
+    if (chipCanada && !p.canada) return false;
+    // Rush
+    if (chipRush && !p.rush) return false;
+    return true;
+  });
+
+  renderAllProducts(filtered);
+}
+
+function resetFilters() {
+  const budget = document.getElementById('filter-budget');
+  const qty = document.getElementById('filter-qty');
+  const category = document.getElementById('filter-category');
+  if (budget) budget.value = '';
+  if (qty) qty.value = '';
+  if (category) category.value = '';
+  document.getElementById('chip-canada')?.classList.remove('active');
+  document.getElementById('chip-rush')?.classList.remove('active');
+  const canadaCb = document.getElementById('chip-canada')?.querySelector('input');
+  const rushCb = document.getElementById('chip-rush')?.querySelector('input');
+  if (canadaCb) canadaCb.checked = false;
+  if (rushCb) rushCb.checked = false;
+  clearSearch();
+}
+
+function handleAddToCart(productId, btn) {
+  addToCart(productId);
+  btn.textContent = '✓ Added';
+  btn.classList.add('added');
+  setTimeout(() => {
+    btn.textContent = '+ Add';
+    btn.classList.remove('added');
+  }, 1400);
+}
+
+/* ─── RENDER CART PAGE ─────────────────────────────────── */
+function renderCartPage() {
+  const panel = document.getElementById('cart-items-panel');
+  const items = getCartItems();
+  const count = getCartCount();
+
+  document.getElementById('cart-count-label').textContent =
+    count === 0 ? 'Your cart is empty' : `${count} item${count === 1 ? '' : 's'} in your cart`;
+
+  if (items.length === 0) {
+    panel.innerHTML = `
+      <div class="cart-empty">
+        <div class="cart-empty-icon">🛒</div>
+        <h2>Your cart is empty</h2>
+        <p>Add some products to get started</p>
+        <button class="btn-primary" onclick="showPage('products')">Browse Products</button>
+      </div>`;
+  } else {
+    panel.innerHTML = items.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-img">${item.emoji}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-cat">${item.category}</div>
+        </div>
+        <div class="cart-item-qty">
+          <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+        </div>
+        <div class="cart-item-price">$${(item.price * item.qty).toFixed(2)}</div>
+        <button class="cart-item-remove" onclick="removeFromCart(${item.id})" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  const sub = getCartSubtotal();
+  const tax = getCartTax();
+  const total = getCartTotal();
+  document.getElementById('summary-subtotal').textContent = `$${sub.toFixed(2)}`;
+  document.getElementById('summary-tax').textContent = `$${tax.toFixed(2)}`;
+  document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
+  document.getElementById('checkout-btn').disabled = items.length === 0;
+}
+
+/* ─── RENDER CHECKOUT SUMMARY ──────────────────────────── */
+function renderCheckoutSummary() {
+  const items = getCartItems();
+  const sub = getCartSubtotal();
+  const tax = getCartTax();
+  const total = getCartTotal();
+
+  const linesContainer = document.getElementById('order-line-items');
+  if (linesContainer) {
+    linesContainer.innerHTML = items.map(item => `
+      <div class="order-line">
+        <div class="order-line-img">${item.emoji}</div>
+        <div class="order-line-info">
+          <div class="order-line-name">${item.name}</div>
+          <div class="order-line-qty">Qty: ${item.qty}</div>
+        </div>
+        <div class="order-line-price">$${(item.price * item.qty).toFixed(2)}</div>
+      </div>
+    `).join('');
+  }
+
+  const osSubtotal = document.getElementById('os-subtotal');
+  const osTax = document.getElementById('os-tax');
+  const osTotal = document.getElementById('os-total');
+  const payTotal = document.getElementById('pay-total');
+
+  if (osSubtotal) osSubtotal.textContent = `$${sub.toFixed(2)}`;
+  if (osTax) osTax.textContent = `$${tax.toFixed(2)}`;
+  if (osTotal) osTotal.textContent = `$${total.toFixed(2)}`;
+  if (payTotal) payTotal.textContent = `$${total.toFixed(2)}`;
+}
+
+/* ─── STRIPE INTEGRATION ───────────────────────────────── */
+// TO PRODUCTION: Replace with your live publishable key from https://dashboard.stripe.com/apikeys
+// Currently set to Stripe's official test key (safe to publish)
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+
+let stripe = null;
+let stripeElements = null;
+let cardElement = null;
+
+function initStripe() {
+  try {
+    // Initialize with a valid Stripe test key
+    // Replace 'pk_test_...' below with your own Stripe publishable test key from dashboard.stripe.com
+    stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx');  // Stripe's own public test key
+    stripeElements = stripe.elements({
+      fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap' }]
+    });
+    cardElement = stripeElements.create('card', {
+      style: {
+        base: {
+          fontFamily: '"Inter", sans-serif',
+          fontSize: '14px',
+          color: '#0D1F38',
+          '::placeholder': { color: '#8A9BB2' },
+          iconColor: '#1E6FD9',
+        },
+        invalid: { color: '#dc2626', iconColor: '#dc2626' }
+      }
+    });
+    cardElement.mount('#card-element');
+    cardElement.on('change', ({ error }) => {
+      const errEl = document.getElementById('card-errors');
+      errEl.textContent = error ? `⚠ ${error.message}` : '';
+    });
+  } catch (e) {
+    console.warn('Stripe initialization note:', e.message);
+    // Fallback: show a static card input if Stripe key is placeholder
+    document.getElementById('card-element').innerHTML = `
+      <div style="padding:4px 0;color:var(--text-muted);font-size:13px">
+        ℹ Stripe element will load with a valid publishable key.
+        Replace the key in <code>initStripe()</code> with your own from 
+        <a href="https://dashboard.stripe.com/apikeys" target="_blank" style="color:var(--accent)">dashboard.stripe.com</a>.
+      </div>`;
+  }
+}
+
+async function handleCheckout(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('pay-btn');
+  const total = getCartTotal();
+
+  if (getCartItems().length === 0) {
+    showToast('Your cart is empty!', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Processing...`;
+
+  const cardName = form.cardName.value;
+
+  try {
+    if (stripe && cardElement) {
+      // Real Stripe tokenization flow
+      const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: {
+          name: cardName,
+          email: form.email.value,
+        }
+      });
+
+      if (error) {
+        document.getElementById('card-errors').textContent = `⚠ ${error.message}`;
+        btn.disabled = false;
+        btn.innerHTML = `Pay Now — $${total.toFixed(2)}`;
+        return;
+      }
+
+      // TO PRODUCTION:
+      // Send { paymentMethodId, amount: Math.round(total * 100), currency: 'cad' }
+      // to your server endpoint, which calls stripe.paymentIntents.create() and confirms.
+      // See: https://stripe.com/docs/payments/payment-intents
+      console.log('Payment Method ID (send to server):', paymentMethod.id);
+    }
+
+    // Simulate server response delay (2s)
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Generate order ID
+    const orderId = 'BF-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+    document.getElementById('success-order-id').textContent = orderId;
+
+    // Clear cart
+    cart = {};
+    updateCartBadge();
+    renderCartPage();
+
+    showPage('success');
+
+  } catch (err) {
+    document.getElementById('card-errors').textContent = `⚠ Something went wrong. Please try again.`;
+    btn.disabled = false;
+    btn.innerHTML = `Pay Now — $${total.toFixed(2)}`;
+  }
+}
+
+/* ─── BILLING ADDRESS TOGGLE ───────────────────────────── */
+function toggleBillingAddress() {
+  const checked = document.getElementById('same-as-shipping').checked;
+  document.getElementById('billing-address-fields').style.display = checked ? 'none' : 'block';
+}
+
+/* ─── PAGE ROUTING ─────────────────────────────────────── */
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId)?.classList.add('active');
+
+  // Show/hide footer (hide only on success)
+  document.getElementById('shared-footer').style.display = pageId === 'success' ? 'none' : '';
+
+  // Update nav active states
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + pageId);
+  if (navEl) navEl.classList.add('active');
+
+  // Close mobile menu
+  document.getElementById('nav-links').classList.remove('open');
+
+  // Refresh data on relevant pages
+  if (pageId === 'cart') renderCartPage();
+  if (pageId === 'products') renderProductGrids();
+  if (pageId === 'checkout') {
+    renderCheckoutSummary();
+    // Initialize Stripe elements lazily
+    if (!cardElement) initStripe();
+  }
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goToCheckout() {
+  if (getCartItems().length === 0) {
+    showToast('Add products to your cart first', 'error');
+    return;
+  }
+  showPage('checkout');
+}
+
+/* ─── MOBILE MENU ──────────────────────────────────────── */
+function toggleMobileMenu() {
+  document.getElementById('nav-links').classList.toggle('open');
+}
+
+/* ─── TOAST SYSTEM ─────────────────────────────────────── */
+function showToast(message, type = '') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast${type ? ' ' + type : ''}`;
+  toast.innerHTML = `${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'} ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
+}
+
+/* ─── INIT ─────────────────────────────────────────────── */
+function init() {
+  renderProductGrids();
+  renderCartPage();
+  renderCheckoutSummary();
+}
+
+init();
+</script>
+</body>
+</html>
